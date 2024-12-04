@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Summary</title>
+</head>
+<body>
+    <h1>Order Summary</h1>
+    <table border="1">
+        <tr>
+            <th>Sale ID</th>
+            <th>Customer ID</th>
+            <th>Product ID</th>
+            <th>Quantity</th>
+            <th>Total Amount</th>
+            <th>Sale Date</th>
+        </tr>
+        <tr>
+            <td>{{ sale[0] }}</td>
+            <td>{{ sale[1] }}</td>
+            <td>{{ sale[2] }}</td>
+            <td>{{ sale[3] }}</td>
+            <td>{{ sale[4] }}</td>
+            <td>{{ sale[5] }}</td>
+        </tr>
+    </table>
+</body>
+</html>
