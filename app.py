@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect, url_for
 import mysql.connector
 import configparser
 
@@ -63,7 +63,7 @@ def add_customer():
             cursor.close()
             conn.close()
 
-@app.route('/place_order/<int:customer_id>')
+@app.route('/place_order/<int:customer_id>', )
 def place_order(customer_id):
     conn = None
     try:
@@ -83,12 +83,16 @@ def place_order(customer_id):
             cursor.close()
             conn.close()
 
-@app.route('/submit_order', methods=['POST'])
+@app.route('/submit_order', methods=['POST', 'GET'])
 def submit_order():
-    customer_id = request.form['customer_id']
-    product_name = request.form['product_name']
-    quantity = int(request.form['quantity'])
-
+    if request.method == 'POST':
+        customer_id = request.form['customer_id']
+        product_name = request.form['product_name']
+        quantity = int(request.form['quantity'])
+    elif request.method == 'GET':
+        customer_id = request.args.get('customer_id')
+        product_name = request.args.get('product_name')
+        quantity = int(request.args.get('quantity'))
     conn = None
     try:
         conn = mysql.connector.connect(**db_config)
@@ -100,6 +104,24 @@ def submit_order():
 
         if product:
             product_id, price = product
+
+            fetch_inventory_query = "SELECT Quantity FROM Inventory WHERE Product_ID = %s"
+            cursor.execute(fetch_inventory_query, (product_id,))
+            inventory = cursor.fetchone()
+
+            if inventory:
+                available_quantity = inventory[0]
+                if available_quantity < quantity:
+                    # If insufficient inventory, display options to the user
+                    return render_template(
+                        'insufficient_inventory.html',
+                        product_name=product_name,
+                        available_quantity=available_quantity,
+                        requested_quantity=quantity,
+                        customer_id=customer_id,
+                        product_id=product_id
+                    )
+                
             total_amount = quantity * price
 
             # Insert sale into Sales table
@@ -125,5 +147,31 @@ def submit_order():
             conn.close()
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+@app.route('/update_order', methods=['POST'])
+def update_order():
+    action = request.form['action']
+    product_name = request.form['product_name']
+    customer_id = request.form['customer_id']
+
+    if action == 'cancel_order':
+        return "Thank You!"
+
+    elif action == 'new_order':
+        return redirect(f'/place_order/{customer_id}')
+
+    elif action == 'change_quantity':
+        customer_id = request.form['customer_id']
+        product_id = request.form['product_id']
+        new_quantity = int(request.form['new_quantity'])
+        print("Request Method:", request.method)
+        print("Customer ID:", request.args.get('customer_id'))
+        print("Product Name:", request.args.get('product_name'))
+        print("Quantity:", request.args.get('quantity'))
+
+        # Redirect to the submit_order method with new quantity
+        return redirect(url_for('submit_order', customer_id=customer_id, product_name=product_name, quantity=new_quantity))
+
+
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=5000, debug=True)
