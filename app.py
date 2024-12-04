@@ -98,7 +98,7 @@ def submit_order():
         product = cursor.fetchone()
 
         if product:
-            price = product[0]
+            product_id, price = product
             total_amount = quantity * price
 
             # Insert sale into Sales table
