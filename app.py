@@ -32,6 +32,7 @@ def add_customer():
     # Fetch form data
     name = request.form['name']
     phone = request.form['phone']
+    email = request.form['email']
     address = request.form['address']
 
     conn = None
@@ -40,8 +41,8 @@ def add_customer():
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
 
-        check_query = "SELECT Customer_ID FROM Customers WHERE Customer_Name = %s AND Phone = %s"
-        cursor.execute(check_query, (name, phone))
+        check_query = "SELECT Customer_ID FROM Customers WHERE Customer_Name = %s AND Phone = %s AND Email = %s AND Address = %s"
+        cursor.execute(check_query, (name, phone, email, address))
         result = cursor.fetchone()
 
         if result:
@@ -49,8 +50,8 @@ def add_customer():
             return f"Welcome Back! Please place your order. <br><a href='/place_order/{customer_id}'>Place Your Order</a>"
 
         else:
-            query = "INSERT INTO Customers (Customer_Name, Phone, Address) VALUES (%s, %s, %s)"
-            cursor.execute(query, (name, phone, address))
+            query = "INSERT INTO Customers (Customer_Name, Phone, Email, Address) VALUES (%s, %s, %s, %s)"
+            cursor.execute(query, (name, phone, email, address))
             conn.commit()
 
             customer_id = cursor.lastrowid
