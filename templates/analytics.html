@@ -302,50 +302,141 @@
             }
         }
 
-        async function fetchVendorSales() {
+        async function loadPaymentMethodsChart() {
+            fetch("/analytics/payment_methods")
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Received data:', data)
+                    if (data.payment_methods) {
+                        const labels = data.payment_methods.map(item => item.Payment_Method);
+                        const counts = data.payment_methods.map(item => item.Payment_Count);
+                        console.log(data);
+                        const ctx = document.getElementById('paymentChart').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'pie',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Payment Methods',
+                                    data: counts,
+                                    backgroundColor: [
+                                        '#FF6384',
+                                        '#36A2EB',
+                                        '#FFCE56',
+                                        '#4BC0C0',
+                                        '#9966FF',
+                                        '#FF9F40'
+                                    ]
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: {
+                                        position: 'top',
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Payment Methods Breakdown'
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        console.error("No payment data available.");
+                    }
+                })
+                .catch(error => console.error('Error fetching payment methods data:', error));
+        }
+
+        async function loadCategorySalesChart() {
+            fetch("/analytics/category_sales")
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Received data:', data)
+                    if (data.category_sales) {
+                        const labels = data.category_sales.map(item => item.Category);
+                        const counts = data.category_sales.map(item => item.Total_Sales);
+                        console.log(data);
+                        const ctx = document.getElementById('categorySales').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'pie',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Category Sales',
+                                    data: counts,
+                                    backgroundColor: [
+                                        '#FF6384',
+                                        '#36A2EB',
+                                        '#FFCE56',
+                                        '#4BC0C0',
+                                        '#9966FF',
+                                        '#FF9F40'
+                                    ]
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: {
+                                        position: 'top',
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Category wise Sales data'
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        console.error("No data available.");
+                    }
+                })
+                .catch(error => console.error('Error fetching category sales data:', error));
+        }
+
+        async function fetchMonthlyProfits() {
             try {
-                const response = await fetch('/analytics/vendor_sales');
+                // Fetch data from the backend endpoint
+                const response = await fetch('/analytics/monthly_profits');
                 const data = await response.json();
 
-                // Ensure data is available
-                if (data) {
-                    // Prepare data for the chart
-                    const chartData = {
-                        labels: [],
-                        datasets: []
-                    };
+                // Check if the data contains monthly profits
+                if (data.monthly_profits && data.monthly_profits.length > 0) {
+                    const labels = data.monthly_profits.map(item => item.month); // Extract months
+                    const profits = data.monthly_profits.map(item => item.profit); // Extract profits
 
-                    // For each vendor, create a dataset
-                    let colors = ['#3498db', '#9b59b6', '#2ecc71', '#f39c12', '#e74c3c', '#1abc9c']; // Add more colors if necessary
-                    let datasetIndex = 0;
+                    // Get the canvas context for the chart
+                    const ctx = document.getElementById('monthlyProfitsChart').getContext('2d');
 
-                    for (let vendorId in data) {
-                        let vendorData = data[vendorId];
-                        
-                        chartData.datasets.push({
-                            label: `Vendor ${vendorId}`,
-                            data: vendorData.sales,
-                            fill: false,
-                            borderColor: colors[datasetIndex % colors.length],
-                            tension: 0.1
-                        });
-
-                        // Update months
-                        chartData.labels = vendorData.months;
-
-                        datasetIndex++;
-                    }
-
-                    // Render the chart
-                    const ctx = document.getElementById('vendorSalesChart').getContext('2d');
+                    // Render the bar chart
                     new Chart(ctx, {
-                        type: 'line',
-                        data: chartData,
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Monthly Profits ($)',
+                                data: profits,
+                                backgroundColor: profits.map(value =>
+                                    value >= 0 ? 'rgba(46, 204, 113, 0.8)' : 'rgba(231, 76, 60, 0.8)'
+                                ), // Green for positive, Red for negative
+                                borderColor: profits.map(value =>
+                                    value >= 0 ? 'rgba(39, 174, 96, 1)' : 'rgba(192, 57, 43, 1)'
+                                ), // Darker green or red for borders
+                                borderWidth: 1
+                            }]
+                        },
                         options: {
                             responsive: true,
                             plugins: {
                                 legend: {
+                                    display: true,
                                     position: 'top'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Monthly Profits Overview'
                                 },
                                 tooltip: {
                                     callbacks: {
@@ -360,20 +451,103 @@
                                     beginAtZero: true,
                                     title: {
                                         display: true,
-                                        text: 'Total Sales ($)'
+                                        text: 'Profits ($)'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Months'
                                     }
                                 }
                             }
                         }
                     });
                 } else {
-                    alert("No vendor sales data found.");
+                    alert("No monthly profit data found.");
                 }
             } catch (error) {
-                console.error("Error fetching vendor sales data: ", error);
-                alert("An error occurred while fetching vendor sales data.");
+                console.error("Error fetching monthly profit data: ", error);
+                alert("An error occurred while fetching monthly profit data.");
             }
         }
+
+        async function fetchTopSoldProducts() {
+            try {
+                // Fetch data from the backend endpoint
+                const response = await fetch('/analytics/top_sold_products');
+                const data = await response.json();
+
+                // Check if data is available
+                if (data.top_sold_products && data.top_sold_products.length > 0) {
+                    // Unhide the chart container
+                    document.getElementById('most-sold-products').style.display = 'block';
+
+                    const labels = data.top_sold_products.map(item => item.Product_Name); // Product names
+                    const quantities = data.top_sold_products.map(item => item.Total_Quantity); // Quantities sold
+
+                    // Get the canvas context for the chart
+                    const ctx = document.getElementById('topSoldProductsChart').getContext('2d');
+
+                    // Render the bar chart
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Units Sold',
+                                data: quantities,
+                                backgroundColor: ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f'], // Different colors
+                                borderColor: '#34495e',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Top 5 Most Sold Products'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `${context.raw.toLocaleString()} units`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Quantity Sold'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Products'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    alert("No data available for top sold products.");
+                }
+            } catch (error) {
+                console.error("Error fetching top sold products: ", error);
+                alert("An error occurred while fetching top sold products data.");
+            }
+        }
+
+
+
 
 
         // Initial setup to display the default section (Best Selling Product)
@@ -402,10 +576,27 @@
             await fetchSaleItems();
         }
 
-        async function handleVendorSalesClick() {
-            showSection('vendor-sales');
-            await fetchVendorSales();
+        async function handlePaymentMethodsClick() {
+            showSection('payment-methods'); // Assuming you have a section ID like this for showing the pie chart
+            await loadPaymentMethodsChart();
         }
+
+        async function handleCategorySalesClick() {
+            showSection('category-sales'); // Assuming you have a section ID like this for showing the pie chart
+            await loadCategorySalesChart();
+        }
+
+        async function handleMonthlyProfitsClick() {
+            showSection('monthly-profits'); // Assuming you have a section ID like this for showing the pie chart
+            await fetchMonthlyProfits();
+        }
+
+        async function handleTopSoldProductsClick() {
+            showSection('most-sold-products'); // Assuming you have a section ID like this for showing the pie chart
+            await fetchTopSoldProducts();
+        }
+
+        
     </script>
 </head>
 <body>
@@ -419,7 +610,11 @@
         <a href="#" id="least-profitable-link" onclick="showSection('least-profitable'); fetchLeastProfitableVendor();">Least Profitable Vendor</a>
         <a href="#" id="sales-trend-link" onclick="handleSalesTrendClick()">Sales Trends</a>
         <a href="#" id="sale-items-link" onclick="handleSaleItemsClick()">Sale Items</a>
-        <a href="#" id="vendor-sales-link" onclick="showSection('vendor-sales')">Vendor Sales</a>
+        <a href="#" id="payment-methods-link" onclick="handlePaymentMethodsClick()">Payment Methods Breakdown</a>
+        <a href="#" id="category-sales-link" onclick="handleCategorySalesClick()">Category wise Sales data </a>
+        <a href="#" id="monthly-profits-link" onclick="handleMonthlyProfitsClick()">Monthly Profits</a>
+        <a href="#" id="most-sold-products-link" onclick="handleTopSoldProductsClick()">Top 5 Most Sold Products</a>
+
     </div>
 
     <div class="content">
@@ -483,12 +678,30 @@
                 </tbody>
             </table>
         </div>
-
-        <div id="vendor-sales" class="content-section">
-            <h3>Vendor Sales</h3>
-            <canvas id="vendorSalesChart" width="400" height="200"></canvas>
+        
+        <div id = "payment-methods" class="content-section" style="width: 50%; margin: auto; padding-top: 20px;">
+            <h2>Payment Methods Breakdown</h2>
+            <canvas id="paymentChart"></canvas>
         </div>
 
+        <div id = "category-sales" class="content-section" style="width: 50%; margin: auto; padding-top: 20px;">
+            <h2>Category wise Sales data </h2>
+            <canvas id="categorySales"></canvas>
+        </div>
+
+        <div id="monthly-profits" class="content-section">
+            <h3>Monthly Profits</h3>
+            <canvas id="monthlyProfitsChart" width="400" height="200"></canvas>
+        </div>
+
+        <div id="most-sold-products" class="content-section">
+            <canvas id="topSoldProductsChart"></canvas>
+        </div>
+        
+
+
+        
+        
 
     </div>
 </body>

@@ -2,8 +2,7 @@ from flask import Flask, request, render_template, jsonify, redirect, url_for
 import mysql.connector
 import configparser
 from datetime import datetime, timedelta
-import logging
-import pandas as pd
+from decimal import Decimal
 
 app = Flask(__name__)
 
@@ -481,53 +480,169 @@ def sale_items():
             cursor.close()
             conn.close()
 
-@app.route('/analytics/vendor_sales', methods=['GET'])
-def vendor_sales():
+@app.route('/analytics/payment_methods')
+def payment_methods():
+    conn = None
     try:
-        # Connect to your database
         conn = mysql.connector.connect(**db_config)
-        cur = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
+        print("Connected to the database to find payment methods")
 
-        # Your SQL query
-        query = """
-        SELECT 
-            EXTRACT(MONTH FROM Sale_Date) AS Month,
-            EXTRACT(YEAR FROM Sale_Date) AS Year,
-            Vendor_ID,
-            SUM(Price * Quantity) AS Total_Sales
-        FROM Sales
-        JOIN Products ON Sales.Product_ID = Products.Product_ID
-        GROUP BY EXTRACT(MONTH FROM Sale_Date), EXTRACT(YEAR FROM Sale_Date), Vendor_ID
-        ORDER BY Year, Month, Vendor_ID;
-        """
+        # Query to fetch payment method counts
+        cursor.execute("""
+            SELECT Payments.Payment_Method,COUNT(Payments.T_ID) AS Payment_Count
+            FROM Payments
+            GROUP BY Payments.Payment_Method
+            ORDER BY Payment_Count DESC;
+
+        """)
+
+        payment_data = cursor.fetchall()
+        print("Query Result:", payment_data)
+
+
+        if payment_data:
+            return jsonify({'payment_methods': payment_data})
+        else:
+            return jsonify({'error': 'No payment data available'}), 404
+
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+
+    finally:
+        if conn is not None and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+@app.route('/analytics/category_sales')
+def category_sales():
+    conn = None
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor(dictionary=True)
+        print("Connected to the database to find category wise sales")
+
+        cursor.execute("""
+            SELECT Product.Category, SUM(Sales.TotalAmount) AS Total_Sales
+            FROM Sales
+            JOIN Product ON Sales.Product_ID = Product.Product_ID
+            GROUP BY Product.Category
+            ORDER BY Total_Sales DESC;
+        """)
+
+        category_sales = cursor.fetchall()
+        print("Query Result:", category_sales)
+
+
+        if category_sales:
+            return jsonify({'category_sales': category_sales})
+        else:
+            return jsonify({'error': 'No data available'}), 404
+
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+
+    finally:
+        if conn is not None and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+@app.route('/analytics/monthly_profits')
+def monthly_profits():
+    conn = None
+    try:
+        # Connect to the database
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor(dictionary=True)
+        print("Connected to the database to find monthly profit")
 
         # Execute the query
-        cur.execute(query)
-        rows = cur.fetchall()
-        print('Query execution', rows)
+        cursor.execute("""
+            SELECT EXTRACT(YEAR FROM SaleDate) AS Year,
+                   EXTRACT(MONTH FROM SaleDate) AS Month,
+                   SUM(Sales.TotalAmount) - SUM(VendorProducts.Price * Sales.Quantity) AS Profit
+            FROM Sales
+            JOIN Product ON Sales.Product_ID = Product.Product_ID
+            JOIN VendorProducts ON Product.Product_ID = VendorProducts.Product_ID
+            GROUP BY Year, Month
+            ORDER BY Year, Month;
+        """)
 
-        # Format the result into a dictionary
-        sales_data = {}
-        for row in rows:
-            year = int(row[1])
-            month = int(row[0])
-            vendor_id = row[2]
-            total_sales = float(row[3])
+        # Fetch the query results
+        query_result = cursor.fetchall()
+        print("Query Result:", query_result)
 
-            if vendor_id not in sales_data:
-                sales_data[vendor_id] = {'months': [], 'sales': []}
+        # Format the results for the frontend
+        monthly_profits = [
+            {
+                'month': f"{['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][row['Month'] - 1]} {int(row['Year'])}",
+                'profit': float(row['Profit']) if isinstance(row['Profit'], Decimal) else row['Profit']
+            }
+            for row in query_result
+        ]
+
+        # Return the response in the required format
+        if monthly_profits:
+            return jsonify({'monthly_profits': monthly_profits})
+        else:
+            return jsonify({'monthly_profits': []}), 404
+
+    except mysql.connector.Error as err:
+        # Handle database connection errors
+        print(f"Database error: {err}")
+        return jsonify({'error': str(err)}), 500
+
+    finally:
+        # Ensure the connection is closed
+        if conn is not None and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+@app.route('/analytics/top_sold_products')
+def top_sold_products():
+    conn = None
+    try:
+        # Connect to the database
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor(dictionary=True)
+        print("Connected to the database to find top sold products")
+
+        # Execute the SQL query
+        cursor.execute("""
+            SELECT 
+                Product.Product_Name,
+                SUM(Sales.Quantity) AS Total_Quantity
+            FROM Sales
+            JOIN Product ON Sales.Product_ID = Product.Product_ID
+            GROUP BY Product.Product_Name
+            ORDER BY Total_Quantity DESC
+            LIMIT 5;
+        """)
+
+        # Fetch the results
+        top_products = cursor.fetchall()
+        print("Query Result:", top_products)
+
+        for product in top_products:
+            if isinstance(product['Total_Quantity'], Decimal):
+                product['Total_Quantity'] = int(product['Total_Quantity'])
             
-            sales_data[vendor_id]['months'].append(f'{month}-{year}')
-            sales_data[vendor_id]['sales'].append(total_sales)
+        # Return the result as JSON
+        if top_products:
+            return jsonify({'top_sold_products': top_products})
+        else:
+            return jsonify({'error': 'No data available'}), 404
 
-        # Close the database connection
-        cur.close()
-        conn.close()
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        return jsonify({'error': str(err)}), 500
 
-        return jsonify(sales_data)
-    
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    finally:
+        # Close the connection
+        if conn is not None and conn.is_connected():
+            cursor.close()
+            conn.close()
+
 
 
 # Error handler for 404 errors
