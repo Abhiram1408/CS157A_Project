@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Details</title>
+</head>
+<body>
+    <h1>Inventory Details</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Product ID</th>
+                <th>Quantity</th>
+                <th>Threshold</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in inventory %}
+            <tr>
+                <td>{{ record.Product_ID }}</td>
+                <td>{{ record.Quantity }}</td>
+                <td>{{ record.Threshold }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insufficient Inventory</title>
+    <script>
+        function toggleNewQuantityInput() {
+            const action = document.querySelector('input[name="action"]:checked').value;
+            const quantityInput = document.getElementById("new-quantity-input");
+            if (action === "change_quantity") {
+                quantityInput.style.display = "block";
+            } else {
+                quantityInput.style.display = "none";
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Insufficient Inventory</h1>
+    <p>Requested Quantity: {{ requested_quantity }}</p>
+    <p>Available Quantity: {{ available_quantity }}</p>
+    <p>Please choose an action:</p>
+    <form action="/update_order" method="POST">
+        <input type="hidden" name="customer_id" value="{{ customer_id }}">
+        <input type="hidden" name="product_id" value="{{ product_id }}">
+        <input type="hidden" name="product_name" value="{{ product_name }}">
+
+        <label>
+            <input type="radio" name="action" value="change_quantity" onclick="toggleNewQuantityInput()"> Change Quantity
+        </label><br>
+        <label>
+            <input type="radio" name="action" value="new_order" onclick="toggleNewQuantityInput()"> Place New Order
+        </label><br>
+        <label>
+            <input type="radio" name="action" value="cancel_order" onclick="toggleNewQuantityInput()"> Cancel Order
+        </label><br><br>
+
+        <!-- New Quantity Input Box (Initially Hidden) -->
+        <div id="new-quantity-input" style="display: none;">
+            <label for="new_quantity">Enter New Quantity:</label><br>
+            <input type="number" id="new_quantity" name="new_quantity" max="{{ available_quantity }}"><br><br>
+        </div>
+
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>

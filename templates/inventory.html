@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management</title>
+</head>
+<body>
+    <h1>Inventory Management</h1>
+    <div>
+        <h2>Show Inventory Details</h2>
+        <form action="/show_inventory" method="POST">
+            <button type="submit">Show Inventory</button>
+        </form>
+    </div>
+    <div>
+        <h2>View Vendor Orders</h2>
+        <form action="/view_vendor_orders" method="POST">
+            <button type="submit">View Vendor Orders</button>
+        </form>
+    </div>
+    <div>
+        <h2>Update Delivery Status</h2>
+        <form action="/update_delivery_status" method="POST">
+            <label for="vendor_order_id">Enter Vendor Order ID:</label>
+            <input type="number" id="vendor_order_id" name="vendor_order_id" required>
+            <button type="submit">Update Status</button>
+        </form>
+    </div>
+</body>
+</html>
