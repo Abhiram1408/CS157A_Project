@@ -5,110 +5,173 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics </title>
     <style>
-/* Basic Reset */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f9;
-    padding: 20px;
-    color: #333;
-}
-
-/* Sidebar Styles */
-.sidebar {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    width: 200px;
-    background-color: #2c3e50;
-    color: white;
-    padding: 15px;
-    border-radius: 8px;
-}
-
-.sidebar h3 {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.sidebar a {
-    display: block;
-    padding: 10px;
-    color: white;
-    text-decoration: none;
-    margin: 10px 0;
-    border-radius: 5px;
-    transition: background-color 0.3s;
-}
-
-.sidebar a:hover {
-    background-color: #34495e;
-}
-
-/* Content Section */
-.content {
-    margin-left: 250px;
-    padding: 20px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.content h1 {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 36px;
-    color: #2980b9;
-}
-
-.content h3 {
-    font-size: 28px;
-    margin-bottom: 15px;
-    color: #2c3e50;
-}
-
-.content p {
-    font-size: 18px;
-    margin: 10px 0;
-}
-
-.content .card {
-    padding: 20px;
-    background-color: #ecf0f1;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.content .card strong {
-    font-size: 20px;
-    color: #2980b9;
-}
-
-/* Hide all content sections by default */
-.content-section {
-    display: none;
-}
-
-/* Link Styling */
-#best-seller-link, #worst-seller-link, #vendor-sales-link, #most-profitable-link, #least-profitable-link {
-    text-decoration: none;
-    font-size: 18px;
-    font-weight: 500;
-    color: white;
-    margin-bottom: 12px;
-}
-
-/* Highlighted Navigation Item */
-.active-link {
-    background-color: #2980b9;
-}
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+    
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+            color: #333;
+        }
+    
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 200px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+        }
+    
+        .sidebar h3 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+    
+        .sidebar a {
+            display: block;
+            padding: 10px;
+            color: white;
+            text-decoration: none;
+            margin: 10px 0;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+    
+        .sidebar a:hover {
+            background-color: #34495e;
+        }
+    
+        /* Content Section */
+        .content {
+            margin-left: 250px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    
+        /* Sale Items Section */
+        .content h1 {
+            font-size: 36px;
+            color: #2980b9;
+            margin-bottom: 20px;
+        }
+    
+        .content h3 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+    
+        /* Vendor Section Heading (Updated Style for Best Seller, Worst Seller, etc.) */
+        .content h3.vendor-section {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            text-align: left;  /* Left align the heading */
+            padding-left: 20px;  /* Added padding for more visual space */
+            border-left: 5px solid #2980b9;  /* Add a border to visually separate the heading */
+        }
+    
+        /* Vendor Item Tables */
+        .vendor-items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    
+        .vendor-items-table thead {
+            background-color: #2980b9;
+            color: white;
+        }
+    
+        .vendor-items-table th, .vendor-items-table td {
+            padding: 12px;
+            text-align: left;
+        }
+    
+        .vendor-items-table th {
+            font-size: 18px;
+        }
+    
+        .vendor-items-table td {
+            font-size: 16px;
+        }
+    
+        .vendor-items-table tr:nth-child(even) {
+            background-color: #ecf0f1;
+        }
+    
+        .vendor-items-table tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+    
+        .vendor-items-table tr:hover {
+            background-color: #f1f1f1;
+        }
+    
+        .vendor-items-table td, .vendor-items-table th {
+            border-bottom: 2px solid #ddd;
+        }
+    
+        .vendor-items-table td {
+            color: #2c3e50;
+        }
+    
+        /* Sale Items Section */
+        .content-section {
+            display: block;
+            padding: 20px;
+            background-color: #fff;
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    
+        /* Highlighted Navigation Item */
+        .active-link {
+            background-color: #2980b9;
+        }
+    
+        /* Link Styling */
+        #best-seller-link, #worst-seller-link, #vendor-sales-link, #most-profitable-link, #least-profitable-link {
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 500;
+            color: white;
+            margin-bottom: 12px;
+        }
+    
+        /* Hide all content sections by default */
+        .content-section {
+            display: none;
+        }
+    
+        /* Content Section Styling */
+        .content-section {
+            display: block;
+            padding: 20px;
+            background-color: #fff;
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
     </style>
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Function to show the content of a specific section
@@ -208,87 +271,54 @@ body {
         }
         
         async function fetchSalesTrend() {
-            try {
-                const response = await fetch('/analytics/sales_trend');
-                const data = await response.json();
+    try {
+        const response = await fetch('/analytics/sales_trend');
+        const data = await response.json();
+        if (data.sales) {
+            const labels = Object.keys(data.sales);
+            const salesData = Object.values(data.sales);
 
-                if (data.sales) {
-                    const novSales = data.sales.november_2024;
-                    const octSales = data.sales.october_2024;
-                    const novSalesLastYear = data.sales.november_2023;
-
-                    // Update text for raw values
-                    document.getElementById('nov-sales').textContent = `$${novSales.toLocaleString()}`;
-
-                    // Prepare data for the chart
-                    const chartData = {
-                        labels: ['November 2023', 'October 2024', 'November 2024'],
-                        datasets: [
-                            {
-                                label: 'Monthly Sales ($)',
-                                data: [novSalesLastYear, octSales, novSales],
-                                backgroundColor: ['#3498db', '#9b59b6', '#2ecc71'],
-                                borderColor: ['#2980b9', '#8e44ad', '#27ae60'],
-                                borderWidth: 1
+            const ctx = document.getElementById('salesTrendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Monthly Sales ($)',
+                        data: salesData,
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `$${context.raw.toLocaleString()}`;
+                                }
                             }
-                        ]
-                    };
-
-                    // Render the chart
-                    const ctx = document.getElementById('salesTrendChart').getContext('2d');
-                    new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: ['November 2023', 'October 2024', 'November 2024'],
-        datasets: [{
-    label: 'Monthly Sales ($)',
-    data: [novSalesLastYear, octSales, novSales],
-    backgroundColor: [
-        'rgba(44, 62, 80, 0.7)',
-        'rgba(52, 152, 219, 0.7)',
-        'rgba(231, 76, 60, 0.7)'
-    ],
-    borderColor: [
-        'rgba(44, 62, 80, 1)',
-        'rgba(52, 152, 219, 1)',
-        'rgba(231, 76, 60, 1)'
-    ],
-    borderWidth: 1
-}]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'top'
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return `$${context.raw.toLocaleString()}`;
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Sales ($)' }
+                        }
                     }
                 }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                title: {
-                    display: true,
-                    text: 'Sales ($)'
-                }
-            }
+            });
+        } else {
+            alert('No sales data found.');
         }
+    } catch (error) {
+        console.error('Error fetching sales trend', error);
+        alert('An error occurred while fetching sales trend data.');
     }
-});
-                } else {
-                    alert('No sales data found for November 2024.');
-                }
-            } catch (error) {
-                console.error('Error fetching sales trend',error);
-                alert('An error occurred while fetching sales trend data.');
-            }
-        }
+}
 
         // Function to fetch Sale Items
         async function fetchSaleItems() {
@@ -668,8 +698,8 @@ borderColor: 'rgba(44, 62, 80, 1)',
 
         <!-- Sales Trend Section -->
         <div id="sales-trend" class="content-section">
-            <h3>Sales Trend (November 2024)</h3>
-            <p><strong>November Sales:</strong> $<span id="nov-sales"></span></p>
+            <h3>Sales Trend - Month on Month</h3>
+            
             <canvas id="salesTrendChart" width="400" height="200"></canvas>
         </div>
 
@@ -718,3 +748,4 @@ borderColor: 'rgba(44, 62, 80, 1)',
     </div>
 </body>
 </html>
+

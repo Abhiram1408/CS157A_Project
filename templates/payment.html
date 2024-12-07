@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Page</title>
+    <style>
+        /* Basic styling for the page */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fa;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        .navigation {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .home-button {
+            text-decoration: none;
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .home-button:hover {
+            background-color: #34495e;
+        }
+
+        select, input[type="submit"] {
+            padding: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navigation">
+        <a href="./" class="home-button">Home</a>
+    </div>
+
+    <h1>Select Payment Method</h1>
+
+    <form action="/process_payment" method="POST">
+        <input type="hidden" name="customer_id" value="{{ customer_id }}">
+        <input type="hidden" name="product_id" value="{{ product_id }}">
+        <input type="hidden" name="quantity" value="{{ quantity }}">
+        <input type="hidden" name="total_amount" value="{{ total_amount }}">
+    
+        <label for="payment_method">Choose a Payment Method:</label>
+        <select name="payment_method" id="payment_method">
+            <option value="Credit Card">Credit Card</option>
+            <option value="Debit Card">Debit Card</option>
+            <option value="PayPal">PayPal</option>
+            <option value="Cash">Cash</option>
+        </select><br><br>
+    
+        <input type="submit" value="Submit Payment">
+    </form>
+</body>
+</html>
+

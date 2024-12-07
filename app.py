@@ -1,10 +1,17 @@
-from flask import Flask, request, render_template, jsonify, redirect, url_for
-import mysql.connector
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify # type: ignore
+import mysql.connector # type: ignore
 import configparser
 from datetime import datetime, timedelta
+import logging
 from decimal import Decimal
+from datetime import datetime, timedelta
+
+
+
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # For flash messages
+
 
 config = configparser.ConfigParser()
 config.read("local.conf")
@@ -28,10 +35,6 @@ def add_customer_form():
 @app.route('/')
 def home():
     return render_template('form.html')
-
-@app.route('/inventory')
-def inventory():
-    return render_template('inventory.html')
 
 @app.route('/add_customer', methods=['POST'])
 def add_customer():
@@ -69,196 +72,152 @@ def add_customer():
             cursor.close()
             conn.close()
 
-@app.route('/place_order/<int:customer_id>')
+@app.route('/place_order/<int:customer_id>', methods=['GET', 'POST'])
 def place_order(customer_id):
     conn = None
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor(dictionary=True)
 
-        # Fetch products
-        fetch_query = "SELECT Product_ID, Product_Name, Category, Price FROM Product"
-        cursor.execute(fetch_query)
-        products = cursor.fetchall()
+        if request.method == 'GET':
+            fetch_query = "SELECT Product_ID, Product_Name, Category, Price FROM Product"
+            cursor.execute(fetch_query)
+            products = cursor.fetchall()
 
-        return render_template('place_order.html', customer_id=customer_id, products=products)
+            return render_template('place_order.html', products=products, customer_id=customer_id)
+
+        elif request.method == 'POST':
+            product_id = request.form.get('product_id')
+            quantity = request.form.get('quantity')
+
+            if not product_id or not quantity:
+                flash("Missing required form fields. Please try again.")
+                return redirect(url_for('place_order', customer_id=customer_id))
+
+            try:
+                quantity = int(quantity)
+            except ValueError:
+                flash("Quantity must be a valid number. Please try again.")
+                return redirect(url_for('place_order', customer_id=customer_id))
+
+            inventory_query = """
+                SELECT p.Product_ID, p.Product_Name, i.Quantity, p.Price 
+                FROM Product p 
+                JOIN Inventory i ON p.Product_ID = i.Product_ID 
+                WHERE p.Product_ID = %s
+            """
+            cursor.execute(inventory_query, (product_id,))
+            product = cursor.fetchone()
+
+            if not product:
+                flash(f"Product with ID '{product_id}' not found.")
+                return redirect(url_for('place_order', customer_id=customer_id))
+
+            available_quantity = product['Quantity']
+
+            if available_quantity < quantity:
+                flash(f"Only {available_quantity} units available. Please reduce the quantity.")
+                return redirect(url_for('place_order', customer_id=customer_id))
+
+            total_amount = quantity * product['Price']
+            return render_template('payment.html', 
+                                   customer_id=customer_id, 
+                                   product_id=product_id, 
+                                   product_name=product['Product_Name'], 
+                                   quantity=quantity, 
+                                   total_amount=total_amount)
+
     except mysql.connector.Error as err:
-        return f"Database Error: {err}"
+        flash(f"Database Error: {err}")
+        return redirect(url_for('place_order', customer_id=customer_id))
+
     finally:
-        if conn is not None and conn.is_connected():
+        if conn and conn.is_connected():
             cursor.close()
             conn.close()
 
-@app.route('/submit_order', methods=['POST', 'GET'])
-def submit_order():
-    if request.method == 'POST':
-        customer_id = request.form['customer_id']
-        product_name = request.form['product_name']
-        quantity = int(request.form['quantity'])
-    elif request.method == 'GET':
-        customer_id = request.args.get('customer_id')
-        product_name = request.args.get('product_name')
-        quantity = int(request.args.get('quantity'))
-
+@app.route('/process_payment', methods=['POST'])
+def process_payment():
     conn = None
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
 
-        fetch_product_query = "SELECT Product_ID,Price FROM Product WHERE Product_Name = %s"
-        cursor.execute(fetch_product_query, (product_name,))
-        product = cursor.fetchone()
-
-        if product:
-            product_id, price = product
-
-            fetch_inventory_query = "SELECT Quantity FROM Inventory WHERE Product_ID = %s"
-            cursor.execute(fetch_inventory_query, (product_id,))
-            inventory = cursor.fetchone()
-
-            if inventory:
-                available_quantity = inventory[0]
-                if available_quantity < quantity:
-                    # If insufficient inventory, display options to the user
-                    return render_template(
-                        'insufficient_inventory.html',
-                        product_name=product_name,
-                        available_quantity=available_quantity,
-                        requested_quantity=quantity,
-                        customer_id=customer_id,
-                        product_id=product_id
-                    )
-
-            total_amount = quantity * price
-
-            # Insert sale into Sales table
-            insert_query = """
-                INSERT INTO Sales (Customer_ID, Product_ID, Quantity, TotalAmount, SaleDate)
-                VALUES (%s, %s, %s, %s, NOW())
-            """
-            cursor.execute(insert_query, (customer_id, product_id, quantity, total_amount))
-            conn.commit()
-
-        # Fetch the newly inserted sale
-        sale_id = cursor.lastrowid
-        fetch_query = "SELECT * FROM Sales WHERE Sale_ID = %s"
-        cursor.execute(fetch_query, (sale_id,))
-        sale = cursor.fetchone()
-
-        return render_template('order_summary.html', sale=sale)
-    except mysql.connector.Error as err:
-        return f"Database Error: {err}"
-    finally:
-        if conn is not None and conn.is_connected():
-            cursor.close()
-            conn.close()
-
-@app.route('/update_order', methods=['POST'])
-def update_order():
-    action = request.form['action']
-    product_name = request.form['product_name']
-    customer_id = request.form['customer_id']
-
-    if action == 'cancel_order':
-        return "Thank You!"
-
-    elif action == 'new_order':
-        return redirect(f'/place_order/{customer_id}')
-
-    elif action == 'change_quantity':
         customer_id = request.form['customer_id']
         product_id = request.form['product_id']
-        new_quantity = int(request.form['new_quantity'])
-        print("Request Method:", request.method)
-        print("Customer ID:", request.args.get('customer_id'))
-        print("Product Name:", request.args.get('product_name'))
-        print("Quantity:", request.args.get('quantity'))
+        quantity = int(request.form['quantity'])
+        total_amount = float(request.form['total_amount'])
+        payment_method = request.form['payment_method']
+        print('Trying')
+        sale_query = """
+            INSERT INTO Sales (Customer_ID, Product_ID, Quantity, TotalAmount, SaleDate)
+            VALUES (%s, %s, %s, %s, CURDATE())
+        """
+        cursor.execute(sale_query, (customer_id, product_id, quantity, total_amount))
+        conn.commit()
 
-        # Redirect to the submit_order method with new quantity
-        return redirect(url_for('submit_order', customer_id=customer_id, product_name=product_name, quantity=new_quantity))
+        sale_id = cursor.lastrowid
 
-@app.route('/show_inventory', methods=['POST'])
-def show_inventory():
-    conn = None
-    try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor(dictionary=True)
+        payment_query = """
+            INSERT INTO Payments (Sale_ID, Product_ID, TotalAmount, Payment_Method, PaymentDate)
+            VALUES (%s, %s, %s, %s, CURDATE())
+        """
+        cursor.execute(payment_query, (sale_id, product_id, total_amount, payment_method))
+        conn.commit()
 
-        # Query to get all records from the Inventory table
-        cursor.execute("SELECT * FROM Inventory")
-        inventory_records = cursor.fetchall()
+        inventory_update_query = """
+            UPDATE Inventory
+            SET Quantity = Quantity - %s
+            WHERE Product_ID = %s
+        """
+        cursor.execute(inventory_update_query, (quantity, product_id))
+        conn.commit()
+        print('Trying')
 
-        # Render the inventory details
-        return render_template('inventory_details.html', inventory=inventory_records)
-    
+
+        sales_query = """
+            SELECT s.Sale_ID, s.Customer_ID, s.Product_ID, s.Quantity, s.TotalAmount, s.SaleDate,
+                   p.Payment_Method, p.PaymentDate, pr.Product_Name
+            FROM Sales s
+            JOIN Payments p ON s.Sale_ID = p.Sale_ID
+            JOIN Product pr ON pr.Product_ID = s.Product_ID
+            WHERE s.Sale_ID = %s
+        """
+        cursor.execute(sales_query, (sale_id,))
+        sale_details = cursor.fetchone()
+
+        flash("Payment successfully processed!")
+        return render_template('sales.html', sale_details=sale_details)
+
     except mysql.connector.Error as err:
-        return f"Database Error: {err}"
-    
+        flash(f"Database Error: {err}")
+        return redirect(url_for('place_order', customer_id=customer_id))
+
     finally:
-        if conn is not None and conn.is_connected():
+        if conn and conn.is_connected():
             cursor.close()
             conn.close()
 
-
-# Route to view vendor orders
-@app.route('/view_vendor_orders', methods=['POST'])
-def view_vendor_orders():
+@app.route('/sales', methods=['GET'])
+def sales():
     conn = None
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor(dictionary=True)
-
-        # Query to get all records from the VendorOrders table
-        cursor.execute("SELECT * FROM VendorOrders")
-        vendor_orders = cursor.fetchall()
-
-        # Render the vendor orders
-        return render_template('vendor_orders_details.html', vendor_orders=vendor_orders)
-
+        sales_query = """
+        SELECT c.Customer_Name, pr.Product_Name, pr.Price, s.Quantity, s.TotalAmount, p.Payment_Method
+        FROM Sales s
+        JOIN Customers c ON s.Customer_ID = c.Customer_ID
+        JOIN Product pr ON s.Product_ID = pr.Product_ID
+        JOIN Payments p ON s.Sale_ID = p.Sale_ID
+        """
+        cursor.execute(sales_query)
+        sales = cursor.fetchall()
+        return jsonify(sales)
     except mysql.connector.Error as err:
-        return f"Database Error: {err}"
-
+        return jsonify({'error': str(err)}), 500
     finally:
-        if conn is not None and conn.is_connected():
-            cursor.close()
-            conn.close()
-
-
-# Route to update the delivery status of a vendor order
-@app.route('/update_delivery_status', methods=['POST'])
-def update_delivery_status():
-    vendor_order_id = request.form['vendor_order_id']
-    conn = None
-    try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor(dictionary=True)
-
-        # Check the current delivery status of the order
-        cursor.execute("SELECT Delivery_Status FROM VendorOrders WHERE VendorOrder_ID = %s", (vendor_order_id,))
-        order = cursor.fetchone()
-
-        if order:
-            if order['Delivery_Status'] == 'Ordered':
-                # Update the delivery status to "Delivered" and set the delivery date to today's date
-                update_query = """
-                    UPDATE VendorOrders
-                    SET Delivery_Status = 'Delivered', DeliveryDate = NOW()
-                    WHERE VendorOrder_ID = %s
-                """
-                cursor.execute(update_query, (vendor_order_id,))
-                conn.commit()
-
-                return f"Order {vendor_order_id} status updated to 'Delivered'."
-            else:
-                return f"Order {vendor_order_id} is already {order['Delivery_Status']}."
-        else:
-            return f"Vendor Order ID {vendor_order_id} not found."
-
-    except mysql.connector.Error as err:
-        return f"Database Error: {err}"
-
-    finally:
-        if conn is not None and conn.is_connected():
+        if conn and conn.is_connected():
             cursor.close()
             conn.close()
 
@@ -266,6 +225,8 @@ def update_delivery_status():
 @app.route('/analytics')
 def analytics():
     return render_template('analytics.html')
+
+
 
 # Route to fetch total sales per vendor
 @app.route('/analytics/best_selling_product')
@@ -275,6 +236,7 @@ def best_selling_product():
         # Establish a connection to the database
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor(dictionary=True)
+        print('LASYA')
         # Query to fetch the best-selling product based on total quantity sold
         cursor.execute("""
             SELECT p.Product_Name, SUM(s.Quantity) AS total_quantity
@@ -284,9 +246,11 @@ def best_selling_product():
             ORDER BY total_quantity DESC
             LIMIT 1;
         """)
+        print('LASYA')
 
         # Fetch the result
         best_selling_product = cursor.fetchone()
+        print('LASYA')
 
         if best_selling_product:
             return jsonify({'best_selling_product': best_selling_product})
@@ -342,20 +306,44 @@ def worst_selling_product():
 
 @app.route('/analytics/sales_trend')
 def sales_trend():
+    conn = None
     try:
-        # Sales trend data
-        sales_data = {
-            "sales": {
-                "november_2024": 50000,
-                "october_2024": 45000,
-                "november_2023": 40000
-            }
-        }
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor(dictionary=True)
+        query = """
+            SELECT DATE_FORMAT(SaleDate, '%Y-%m') AS month, SUM(TotalAmount) AS total_sales
+            FROM Sales
+            WHERE SaleDate >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+            GROUP BY DATE_FORMAT(SaleDate, '%Y-%m')
+            ORDER BY month ASC
+        """
+        cursor.execute(query)
+        results = cursor.fetchall()
+        
+        # Create a dictionary with all months in the last year
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=365)
+        all_months = {(start_date + timedelta(days=30*i)).strftime('%Y-%m'): 0 for i in range(12)}
+        
+        # Fill in the actual sales data
+        for row in results:
+            all_months[row['month']] = float(row['total_sales'])
+        
+        # Convert to the required format
+        sales_data = {"sales": all_months}
+        
         return jsonify(sales_data)
+    except mysql.connector.Error as err:
+        app.logger.error(f"Database error: {err}")
+        return jsonify({"error": "Database error"}), 500
     except Exception as e:
         app.logger.error(f"Error fetching sales trend: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
-    
+    finally:
+        if conn and conn.is_connected():
+            cursor.close()
+            conn.close()
+            
 @app.route('/analytics/most_profitable_vendor')
 def most_profitable_vendor():
     conn = None
@@ -480,6 +468,203 @@ def sale_items():
             cursor.close()
             conn.close()
 
+@app.route('/inventory')
+def inventory():
+    return render_template('inventory.html')
+# Route to view vendor orders
+# @app.route('/view_vendor_orders', methods=['POST'])
+# def view_vendor_orders():
+#     conn = None
+#     try:
+#         conn = mysql.connector.connect(**db_config)
+#         cursor = conn.cursor(dictionary=True)
+
+#         # Query to get all records from the VendorOrders table
+#         cursor.execute("SELECT * FROM VendorOrders")
+#         vendor_orders = cursor.fetchall()
+
+#         # Render the vendor orders
+#         return render_template('vendor_orders_details.html', vendor_orders=vendor_orders)
+
+#     except mysql.connector.Error as err:
+#         return f"Database Error: {err}"
+
+#     finally:
+#         if conn is not None and conn.is_connected():
+#             cursor.close()
+#             conn.close()
+
+@app.route('/show_inventory', methods=['POST'])
+def show_inventory():
+    conn = None
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor(dictionary=True)
+
+        # Query to get all records from the Inventory table
+        cursor.execute("""
+            SELECT Product.Product_Name, Inventory.Quantity, Inventory.Threshold
+            FROM Product
+            JOIN Inventory ON Product.Product_ID = Inventory.Product_ID;
+        """)
+        inventory_records = cursor.fetchall()
+
+        # Render the inventory details
+        return render_template('inventory_details.html', inventory=inventory_records)
+    
+    except mysql.connector.Error as err:
+        return f"Database Error: {err}"
+    
+    finally:
+        if conn is not None and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+@app.route('/analytics/vendor_sales', methods=['GET'])
+def vendor_sales():
+    try:
+        # Connect to your database
+        conn = mysql.connector.connect(**db_config)
+        cur = conn.cursor()
+
+        # Your SQL query
+        query = """
+        SELECT 
+            EXTRACT(MONTH FROM Sale_Date) AS Month,
+            EXTRACT(YEAR FROM Sale_Date) AS Year,
+            Vendor_ID,
+            SUM(Price * Quantity) AS Total_Sales
+        FROM Sales
+        JOIN Products ON Sales.Product_ID = Products.Product_ID
+        GROUP BY EXTRACT(MONTH FROM Sale_Date), EXTRACT(YEAR FROM Sale_Date), Vendor_ID
+        ORDER BY Year, Month, Vendor_ID;
+        """
+
+        # Execute the query
+        cur.execute(query)
+        rows = cur.fetchall()
+        print('Query execution', rows)
+
+        # Format the result into a dictionary
+        sales_data = {}
+        for row in rows:
+            year = int(row[1])
+            month = int(row[0])
+            vendor_id = row[2]
+            total_sales = float(row[3])
+
+            if vendor_id not in sales_data:
+                sales_data[vendor_id] = {'months': [], 'sales': []}
+            
+            sales_data[vendor_id]['months'].append(f'{month}-{year}')
+            sales_data[vendor_id]['sales'].append(total_sales)
+
+        # Close the database connection
+        cur.close()
+        conn.close()
+
+        return jsonify(sales_data)
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
+@app.route('/view_vendor_orders', methods=['POST'])
+def view_vendor_orders():
+    conn = None
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor(dictionary=True)
+        
+        query = """
+        SELECT vo.*, v.Vendor_Name, p.Product_Name
+        FROM VendorOrders vo
+        JOIN Vendor v ON vo.Vendor_ID = v.Vendor_ID
+        JOIN Product p ON vo.Product_ID = p.Product_ID
+        WHERE vo.Delivery_Status = 'Pending'
+        """
+        cursor.execute(query)
+        vendor_orders = cursor.fetchall()
+        
+        return render_template('vendor_orders.html', vendor_orders=vendor_orders)
+    except mysql.connector.Error as err:
+        flash(f"Database Error: {err}")
+        return redirect(url_for('inventory'))
+    finally:
+        if conn and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+@app.route('/update_delivery_status', methods=['POST'])
+def update_delivery_status():
+    vendor_order_id = request.form['vendor_order_id']
+    conn = None
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        
+        update_query = """
+        UPDATE VendorOrders
+        SET Delivery_Status = 'Delivered', DeliveryDate = CURDATE()
+        WHERE VendorOrder_ID = %s AND Delivery_Status = 'Pending'
+        """
+        cursor.execute(update_query, (vendor_order_id,))
+        conn.commit()
+        
+        if cursor.rowcount > 0:
+            flash("Delivery status updated successfully!")
+        else:
+            flash("No pending order found with the given ID.")
+        
+        return redirect(url_for('inventory'))
+    except mysql.connector.Error as err:
+        flash(f"Database Error: {err}")
+        return redirect(url_for('inventory'))
+    finally:
+        if conn and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+
+
+# # Route to update the delivery status of a vendor order
+# @app.route('/update_delivery_status', methods=['POST'])
+# def update_delivery_status():
+#     vendor_order_id = request.form['vendor_order_id']
+#     conn = None
+#     try:
+#         conn = mysql.connector.connect(**db_config)
+#         cursor = conn.cursor(dictionary=True)
+
+#         # Check the current delivery status of the order
+#         cursor.execute("SELECT Delivery_Status FROM VendorOrders WHERE VendorOrder_ID = %s", (vendor_order_id,))
+#         order = cursor.fetchone()
+
+#         if order:
+#             if order['Delivery_Status'] == 'Ordered':
+#                 # Update the delivery status to "Delivered" and set the delivery date to today's date
+#                 update_query = """
+#                     UPDATE VendorOrders
+#                     SET Delivery_Status = 'Delivered', DeliveryDate = NOW()
+#                     WHERE VendorOrder_ID = %s
+#                 """
+#                 cursor.execute(update_query, (vendor_order_id,))
+#                 conn.commit()
+
+#                 return f"Order {vendor_order_id} status updated to 'Delivered'."
+#             else:
+#                 return f"Order {vendor_order_id} is already {order['Delivery_Status']}."
+#         else:
+#             return f"Vendor Order ID {vendor_order_id} not found."
+
+#     except mysql.connector.Error as err:
+#         return f"Database Error: {err}"
+
+#     finally:
+#         if conn is not None and conn.is_connected():
+#             cursor.close()
+#             conn.close()
+
 @app.route('/analytics/payment_methods')
 def payment_methods():
     conn = None
@@ -551,50 +736,30 @@ def category_sales():
 def monthly_profits():
     conn = None
     try:
-        # Connect to the database
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor(dictionary=True)
-        print("Connected to the database to find monthly profit")
-
-        # Execute the query
         cursor.execute("""
-            SELECT EXTRACT(YEAR FROM SaleDate) AS Year,
-                   EXTRACT(MONTH FROM SaleDate) AS Month,
-                   SUM(Sales.TotalAmount) - SUM(VendorProducts.Price * Sales.Quantity) AS Profit
+            SELECT EXTRACT(YEAR FROM SaleDate) AS Year, EXTRACT(MONTH FROM SaleDate) AS Month,
+            SUM(Sales.TotalAmount) - SUM(VendorProducts.Price * Sales.Quantity) AS Profit
             FROM Sales
             JOIN Product ON Sales.Product_ID = Product.Product_ID
             JOIN VendorProducts ON Product.Product_ID = VendorProducts.Product_ID
             GROUP BY Year, Month
             ORDER BY Year, Month;
         """)
-
-        # Fetch the query results
         query_result = cursor.fetchall()
-        print("Query Result:", query_result)
-
-        # Format the results for the frontend
         monthly_profits = [
             {
-                'month': f"{['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][row['Month'] - 1]} {int(row['Year'])}",
-                'profit': float(row['Profit']) if isinstance(row['Profit'], Decimal) else row['Profit']
+                'month': f"{['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][int(row['Month']) - 1]} {int(row['Year'])}",
+                'profit': float(row['Profit'])
             }
             for row in query_result
         ]
-
-        # Return the response in the required format
-        if monthly_profits:
-            return jsonify({'monthly_profits': monthly_profits})
-        else:
-            return jsonify({'monthly_profits': []}), 404
-
+        return jsonify({'monthly_profits': monthly_profits})
     except mysql.connector.Error as err:
-        # Handle database connection errors
-        print(f"Database error: {err}")
         return jsonify({'error': str(err)}), 500
-
     finally:
-        # Ensure the connection is closed
-        if conn is not None and conn.is_connected():
+        if conn and conn.is_connected():
             cursor.close()
             conn.close()
 
@@ -602,48 +767,26 @@ def monthly_profits():
 def top_sold_products():
     conn = None
     try:
-        # Connect to the database
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor(dictionary=True)
-        print("Connected to the database to find top sold products")
-
-        # Execute the SQL query
         cursor.execute("""
-            SELECT 
-                Product.Product_Name,
-                SUM(Sales.Quantity) AS Total_Quantity
+            SELECT Product.Product_Name, SUM(Sales.Quantity) AS Total_Quantity
             FROM Sales
             JOIN Product ON Sales.Product_ID = Product.Product_ID
             GROUP BY Product.Product_Name
             ORDER BY Total_Quantity DESC
             LIMIT 5;
         """)
-
-        # Fetch the results
         top_products = cursor.fetchall()
-        print("Query Result:", top_products)
-
         for product in top_products:
-            if isinstance(product['Total_Quantity'], Decimal):
-                product['Total_Quantity'] = int(product['Total_Quantity'])
-            
-        # Return the result as JSON
-        if top_products:
-            return jsonify({'top_sold_products': top_products})
-        else:
-            return jsonify({'error': 'No data available'}), 404
-
+            product['Total_Quantity'] = int(product['Total_Quantity'])
+        return jsonify({'top_sold_products': top_products})
     except mysql.connector.Error as err:
-        print(f"Error: {err}")
         return jsonify({'error': str(err)}), 500
-
     finally:
-        # Close the connection
-        if conn is not None and conn.is_connected():
+        if conn and conn.is_connected():
             cursor.close()
             conn.close()
-
-
 
 # Error handler for 404 errors
 @app.errorhandler(404)
