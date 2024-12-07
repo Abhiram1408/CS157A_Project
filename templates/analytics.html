@@ -5,109 +5,109 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics </title>
     <style>
-        /* Basic Reset */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+/* Basic Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            padding: 20px;
-            color: #333;
-        }
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    padding: 20px;
+    color: #333;
+}
 
-        /* Sidebar Styles */
-        .sidebar {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            width: 200px;
-            background-color: #2c3e50;
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-        }
+/* Sidebar Styles */
+.sidebar {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 200px;
+    background-color: #2c3e50;
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+}
 
-        .sidebar h3 {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+.sidebar h3 {
+    text-align: center;
+    margin-bottom: 30px;
+}
 
-        .sidebar a {
-            display: block;
-            padding: 10px;
-            color: white;
-            text-decoration: none;
-            margin: 10px 0;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
+.sidebar a {
+    display: block;
+    padding: 10px;
+    color: white;
+    text-decoration: none;
+    margin: 10px 0;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
 
-        .sidebar a:hover {
-            background-color: #34495e;
-        }
+.sidebar a:hover {
+    background-color: #34495e;
+}
 
-        /* Content Section */
-        .content {
-            margin-left: 250px;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
+/* Content Section */
+.content {
+    margin-left: 250px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 
-        .content h1 {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 36px;
-            color: #2980b9;
-        }
+.content h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 36px;
+    color: #2980b9;
+}
 
-        .content h3 {
-            font-size: 28px;
-            margin-bottom: 15px;
-            color: #2c3e50;
-        }
+.content h3 {
+    font-size: 28px;
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
 
-        .content p {
-            font-size: 18px;
-            margin: 10px 0;
-        }
+.content p {
+    font-size: 18px;
+    margin: 10px 0;
+}
 
-        .content .card {
-            padding: 20px;
-            background-color: #ecf0f1;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
+.content .card {
+    padding: 20px;
+    background-color: #ecf0f1;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 
-        .content .card strong {
-            font-size: 20px;
-            color: #2980b9;
-        }
+.content .card strong {
+    font-size: 20px;
+    color: #2980b9;
+}
 
-        /* Hide all content sections by default */
-        .content-section {
-            display: none;
-        }
+/* Hide all content sections by default */
+.content-section {
+    display: none;
+}
 
-        /* Link Styling */
-        #best-seller-link, #worst-seller-link, #vendor-sales-link, #most-profitable-link, #least-profitable-link {
-            text-decoration: none;
-            font-size: 18px;
-            font-weight: 500;
-            color: white;
-            margin-bottom: 12px;
-        }
+/* Link Styling */
+#best-seller-link, #worst-seller-link, #vendor-sales-link, #most-profitable-link, #least-profitable-link {
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: 500;
+    color: white;
+    margin-bottom: 12px;
+}
 
-        /* Highlighted Navigation Item */
-        .active-link {
-            background-color: #2980b9;
-        }
+/* Highlighted Navigation Item */
+.active-link {
+    background-color: #2980b9;
+}
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -237,33 +237,50 @@
                     // Render the chart
                     const ctx = document.getElementById('salesTrendChart').getContext('2d');
                     new Chart(ctx, {
-                        type: 'bar', // You can also try 'line' or 'pie'
-                        data: chartData,
-                        options: {
-                            responsive: true,
-                            plugins: {
-                                legend: {
-                                    position: 'top'
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            return `$${context.raw.toLocaleString()}`;
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    title: {
-                                        display: true,
-                                        text: 'Sales ($)'
-                                    }
-                                }
-                            }
-                        }
-                    });
+    type: 'bar',
+    data: {
+        labels: ['November 2023', 'October 2024', 'November 2024'],
+        datasets: [{
+    label: 'Monthly Sales ($)',
+    data: [novSalesLastYear, octSales, novSales],
+    backgroundColor: [
+        'rgba(44, 62, 80, 0.7)',
+        'rgba(52, 152, 219, 0.7)',
+        'rgba(231, 76, 60, 0.7)'
+    ],
+    borderColor: [
+        'rgba(44, 62, 80, 1)',
+        'rgba(52, 152, 219, 1)',
+        'rgba(231, 76, 60, 1)'
+    ],
+    borderWidth: 1
+}]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return `$${context.raw.toLocaleString()}`;
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Sales ($)'
+                }
+            }
+        }
+    }
+});
                 } else {
                     alert('No sales data found for November 2024.');
                 }
@@ -319,14 +336,14 @@
                                 datasets: [{
                                     label: 'Payment Methods',
                                     data: counts,
-                                    backgroundColor: [
-                                        '#FF6384',
-                                        '#36A2EB',
-                                        '#FFCE56',
-                                        '#4BC0C0',
-                                        '#9966FF',
-                                        '#FF9F40'
-                                    ]
+                                    bbackgroundColor: [
+    'rgba(44, 62, 80, 0.7)',
+    'rgba(52, 152, 219, 0.7)',
+    'rgba(231, 76, 60, 0.7)',
+    'rgba(243, 156, 18, 0.7)',
+    'rgba(46, 204, 113, 0.7)',
+    'rgba(155, 89, 182, 0.7)'
+]
                                 }]
                             },
                             options: {
@@ -367,13 +384,12 @@
                                     label: 'Category Sales',
                                     data: counts,
                                     backgroundColor: [
-                                        '#FF6384',
-                                        '#36A2EB',
-                                        '#FFCE56',
-                                        '#4BC0C0',
-                                        '#9966FF',
-                                        '#FF9F40'
-                                    ]
+    'rgba(52, 152, 219, 0.7)',
+    'rgba(46, 204, 113, 0.7)',
+    'rgba(231, 76, 60, 0.7)',
+    'rgba(243, 156, 18, 0.7)',
+    'rgba(155, 89, 182, 0.7)'
+]
                                 }]
                             },
                             options: {
@@ -412,57 +428,53 @@
 
                     // Render the bar chart
                     new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Monthly Profits ($)',
-                                data: profits,
-                                backgroundColor: profits.map(value =>
-                                    value >= 0 ? 'rgba(46, 204, 113, 0.8)' : 'rgba(231, 76, 60, 0.8)'
-                                ), // Green for positive, Red for negative
-                                borderColor: profits.map(value =>
-                                    value >= 0 ? 'rgba(39, 174, 96, 1)' : 'rgba(192, 57, 43, 1)'
-                                ), // Darker green or red for borders
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            plugins: {
-                                legend: {
-                                    display: true,
-                                    position: 'top'
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'Monthly Profits Overview'
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            return `$${context.raw.toLocaleString()}`;
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    title: {
-                                        display: true,
-                                        text: 'Profits ($)'
-                                    }
-                                },
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: 'Months'
-                                    }
-                                }
-                            }
-                        }
-                    });
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Monthly Profits ($)',
+            data: profits,
+            backgroundColor: profits.map(value => value >= 0 ? 'rgba(46, 204, 113, 0.7)' : 'rgba(231, 76, 60, 0.7)'),
+            borderColor: profits.map(value => value >= 0 ? 'rgba(46, 204, 113, 1)' : 'rgba(231, 76, 60, 1)'),
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            title: {
+                display: true,
+                text: 'Monthly Profits Overview'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return `$${context.raw.toLocaleString()}`;
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Profits ($)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Months'
+                }
+            }
+        }
+    }
+});
                 } else {
                     alert("No monthly profit data found.");
                 }
@@ -473,78 +485,78 @@
         }
 
         async function fetchTopSoldProducts() {
-            try {
-                // Fetch data from the backend endpoint
-                const response = await fetch('/analytics/top_sold_products');
-                const data = await response.json();
+    try {
+        const response = await fetch('/analytics/top_sold_products');
+        const data = await response.json();
 
-                // Check if data is available
-                if (data.top_sold_products && data.top_sold_products.length > 0) {
-                    // Unhide the chart container
-                    document.getElementById('most-sold-products').style.display = 'block';
+        if (data.top_sold_products && data.top_sold_products.length > 0) {
+            // Unhide the chart container
+            document.getElementById('most-sold-products').style.display = 'block';
 
-                    const labels = data.top_sold_products.map(item => item.Product_Name); // Product names
-                    const quantities = data.top_sold_products.map(item => item.Total_Quantity); // Quantities sold
+            const labels = data.top_sold_products.map(item => item.Product_Name);
+            const quantities = data.top_sold_products.map(item => item.Total_Quantity);
 
-                    // Get the canvas context for the chart
-                    const ctx = document.getElementById('topSoldProductsChart').getContext('2d');
+            const ctx = document.getElementById('topSoldProductsChart').getContext('2d');
 
-                    // Render the bar chart
-                    new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Units Sold',
-                                data: quantities,
-                                backgroundColor: ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f'], // Different colors
-                                borderColor: '#34495e',
-                                borderWidth: 1
-                            }]
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Units Sold',
+                        data: quantities,
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+borderColor: 'rgba(44, 62, 80, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
                         },
-                        options: {
-                            responsive: true,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'Top 5 Most Sold Products'
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            return `${context.raw.toLocaleString()} units`;
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    title: {
-                                        display: true,
-                                        text: 'Quantity Sold'
-                                    }
-                                },
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: 'Products'
-                                    }
+                        title: {
+                            display: true,
+                            text: 'Top 5 Most Sold Products',
+                            color: '#2c3e50'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.raw.toLocaleString()} units`;
                                 }
                             }
                         }
-                    });
-                } else {
-                    alert("No data available for top sold products.");
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Quantity Sold',
+                                color: '#2c3e50'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Products',
+                                color: '#2c3e50'
+                            }
+                        }
+                    }
                 }
-            } catch (error) {
-                console.error("Error fetching top sold products: ", error);
-                alert("An error occurred while fetching top sold products data.");
-            }
+            });
+        } else {
+            alert("No data available for top sold products.");
         }
+    } catch (error) {
+        console.error("Error fetching top sold products: ", error);
+        alert("An error occurred while fetching top sold products data.");
+    }
+}
+
 
 
 
